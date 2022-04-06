@@ -76,16 +76,8 @@ function formatConnectionDataItem(
   prevKv: Record<string, { upload: number; download: number }>,
   now: number
 ): FormattedConn {
-  const { id, metadata, upload, download, start, chains, rule } = i;
-  const {
-    host,
-    destinationPort,
-    destinationIP,
-    network,
-    type,
-    sourceIP,
-    sourcePort,
-  } = metadata;
+  const { id, metadata, upload, download, start, chains, rule, rulePayload } = i;
+  const { host, destinationPort, destinationIP, network, type, sourceIP, sourcePort } = metadata;
   // host could be an empty string if it's direct IP connection
   let host2 = host;
   if (host2 === '') host2 = destinationIP;
@@ -96,7 +88,7 @@ function formatConnectionDataItem(
     download,
     start: now - new Date(start).valueOf(),
     chains: chains.reverse().join(' / '),
-    rule,
+    rule: (rulePayload == null | rulePayload === '') ? rule : (`${rule}(${rulePayload})`),
     ...metadata,
     host: `${host2}:${destinationPort}`,
     type: `${type}(${network})`,
@@ -130,10 +122,7 @@ function Conn({ apiConfig }) {
   const filteredClosedConns = filterConns(closedConns, filterKeyword);
   const [isCloseAllModalOpen, setIsCloseAllModalOpen] = useState(false);
   const openCloseAllModal = useCallback(() => setIsCloseAllModalOpen(true), []);
-  const closeCloseAllModal = useCallback(
-    () => setIsCloseAllModalOpen(false),
-    []
-  );
+  const closeCloseAllModal = useCallback(() => setIsCloseAllModalOpen(false), []);
   const [isRefreshPaused, setIsRefreshPaused] = useState(false);
   const toggleIsRefreshPaused = useCallback(() => {
     setIsRefreshPaused((x) => !x);
@@ -161,11 +150,7 @@ function Conn({ apiConfig }) {
       });
       // if previous connections and current connections are both empty
       // arrays, we wont update state to avaoid rerender
-      if (
-        x &&
-        (x.length !== 0 || prevConnsRef.current.length !== 0) &&
-        !isRefreshPaused
-      ) {
+      if (x && (x.length !== 0 || prevConnsRef.current.length !== 0) && !isRefreshPaused) {
         prevConnsRef.current = x;
         setConns(x);
       } else {
@@ -218,14 +203,9 @@ function Conn({ apiConfig }) {
             />
           </div>
         </div>
-        <div
-          // @ts-expect-error ts-migrate(2322) FIXME: Type 'number | MutableRefObject<any>' is not assig... Remove this comment to see the full error message
-          ref={refContainer}
-          style={{ padding: 30, paddingBottom, paddingTop: 0 }}
-        >
+        <div ref={refContainer} style={{ padding: 30, paddingBottom, paddingTop: 0 }}>
           <div
             style={{
-              // @ts-expect-error ts-migrate(2362) FIXME: The left-hand side of an arithmetic operation must... Remove this comment to see the full error message
               height: containerHeight - paddingBottom,
               overflow: 'auto',
             }}
@@ -233,24 +213,13 @@ function Conn({ apiConfig }) {
             <TabPanel>
               <>{renderTableOrPlaceholder(filteredConns)}</>
               <Fab
-                icon={
-                  isRefreshPaused ? <Play size={16} /> : <Pause size={16} />
-                }
-                mainButtonStyles={
-                  isRefreshPaused
-                    ? {
-                        background: '#e74c3c',
-                      }
-                    : {}
-                }
+                icon={isRefreshPaused ? <Play size={16} /> : <Pause size={16} />}
+                mainButtonStyles={isRefreshPaused ? { background: '#e74c3c' } : {}}
                 style={fabPosition}
-                text={isRefreshPaused ? 'Resume Refresh' : 'Pause Refresh'}
+                text={isRefreshPaused ? t('Resume Refresh') : t('Pause Refresh')}
                 onClick={toggleIsRefreshPaused}
               >
-                <Action
-                  text="Close All Connections"
-                  onClick={openCloseAllModal}
-                >
+                <Action text="Close All Connections" onClick={openCloseAllModal}>
                   <IconClose size={10} />
                 </Action>
               </Fab>
